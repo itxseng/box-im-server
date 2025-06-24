@@ -348,4 +348,19 @@ public class IMSender {
             listenerMulticaster.multicast(IMListenerType.CHAT_MESSAGE, results);
         }
     }
+
+    public void forceLogout(Long userId, Integer terminal, String deviceId) {
+        String key = String.join(":", IMRedisKey.IM_USER_SERVER_ID, userId.toString(), terminal.toString());
+        Integer serverId = (Integer) redisMQTemplate.opsForValue().get(key);
+        if (serverId != null) {
+            String sendKey = String.join(":", IMRedisKey.IM_MESSAGE_FORCE_LOGOUT_QUEUE, serverId.toString());
+            IMRecvInfo recvInfo = new IMRecvInfo();
+            recvInfo.setCmd(IMCmdType.FORCE_LOGUT.code());
+            recvInfo.setReceivers(Collections.singletonList(new IMUserInfo(userId, terminal, deviceId)));
+            recvInfo.setServiceName(appName);
+            recvInfo.setSendResult(false);
+            recvInfo.setData("被强制下线");
+            redisMQTemplate.opsForList().rightPush(sendKey, recvInfo);
+        }
+    }
 }
