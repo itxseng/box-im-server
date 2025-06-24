@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bx.implatform.mapper.FriendMapper">
+
+    <select id="selectPageList" resultType="com.bx.implatform.vo.FriendGroupVO">
+        SELECT DISTINCT ig.id, ig.name, ig.head_image_thumb,igm1.remark_group_name
+        FROM im_group ig
+        INNER JOIN im_group_member igm1 ON ig.id = igm1.group_id AND igm1.user_id = #{userId} AND igm1.quit = 0
+        INNER JOIN im_group_member igm2 ON ig.id = igm2.group_id AND igm2.user_id = #{friendId} AND igm2.quit = 0
+        LIMIT #{page}, #{size}
+
+    </select>
+</mapper>

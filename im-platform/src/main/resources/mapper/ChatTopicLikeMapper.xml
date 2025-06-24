@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bx.implatform.mapper.ChatTopicLikeMapper">
+
+
+    <select id="queryTopicLike" resultType="com.bx.implatform.vo.TopicVo05">
+        SELECT
+            cu.id as `user_id`, cu.head_image_thumb as `portrait`,
+        IF(cf.remark_nick_name IS NULL OR cf.remark_nick_name = '', cu.nick_name, cf.remark_nick_name) AS display_name
+        FROM `chat_topic_like` ctl
+                 INNER JOIN `im_user` cu ON cu.`id` = ctl.`user_id`
+                 LEFT JOIN im_friend cf ON (cf.`friend_id` = ctl.`user_id`  AND cf.deleted = 0 AND cf.`user_id` = #{userId})
+        WHERE ctl.topic_id = #{topicId}
+          AND ctl.has_like = 'Y'
+    </select>
+</mapper>

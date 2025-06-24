@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bx.implatform.mapper.UserBlacklistMapper">
+
+    <select id="selectPageList" resultType="com.bx.implatform.vo.UserBlacklistVO">
+        select
+        ub.to_user_id,
+        ub.create_time,
+        u.nick_name,
+        u.head_image_thumb,
+        u.user_name
+        from im_user_blacklist ub
+        left join im_user u on ub.from_user_id=#{userId} and u.id = ub.to_user_id
+        where ub.from_user_id=#{userId}
+        order by ub.create_time desc
+        limit #{page},#{size}
+
+    </select>
+</mapper>

@@ -1,0 +1,7 @@
+spring:
+  data:
+    redis:
+      host: 137.220.176.142
+      port: 16378
+      password: Qaz123.0
+      database: 13

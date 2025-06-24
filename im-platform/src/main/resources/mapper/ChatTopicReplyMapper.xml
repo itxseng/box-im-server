@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bx.implatform.mapper.ChatTopicReplyMapper">
+
+    <!-- 字段集 -->
+    <sql id="baseSql">
+        select reply_id, reply_type, reply_status, content, topic_id, user_id, target_id, create_time from chat_topic_reply
+    </sql>
+
+    <!-- 查询列表字段 -->
+    <select id="queryList" resultType="com.bx.implatform.entity.ChatTopicReply">
+        <include refid="baseSql"/>
+        <where>
+            <if test="replyType != null">
+                and reply_type = #{replyType.code}
+            </if>
+            <if test="replyStatus != null">
+                and reply_status = #{replyStatus.code}
+            </if>
+            <if test="topicId != null">
+                and topic_id = #{topicId}
+            </if>
+            <if test="userId != null">
+                and user_id = #{userId}
+            </if>
+        </where>
+    </select>
+
+    <select id="queryReplyList" resultType="com.bx.implatform.vo.TopicVo06">
+        SELECT ctr.reply_id, ctr.reply_type, ctr.content, ctr.create_time
+             ,ctr.user_id,IF(cf.remark_nick_name IS NULL OR cf.remark_nick_name='', cu.nick_name,cf.remark_nick_name) AS display_name, IF(cf.remark_nick_name IS NULL OR cf.remark_nick_name='', cu.nick_name,cf.remark_nick_name) AS nick_name, cu.head_image_thumb as portrait
+             ,if(ctr.reply_type = '2', ctr.target_id, null) as to_user_id, IF(cff.remark_nick_name IS NULL OR cff.remark_nick_name='', cuu.nick_name,cff.remark_nick_name) AS to_display_name, IF(cff.remark_nick_name IS NULL OR cff.remark_nick_name='', cuu.nick_name,cff.remark_nick_name) AS to_nick_name, cuu.head_image_thumb as to_portrait
+        FROM chat_topic_reply ctr
+                 LEFT JOIN im_friend cf ON cf.friend_id = ctr.user_id AND cf.deleted = 0  AND cf.user_id = #{userId}
+                 LEFT JOIN im_user cu ON cu.id = ctr.user_id and cu.status = 0
+                 LEFT JOIN im_friend cff ON cff.friend_id = ctr.target_id AND cff.deleted = 0  AND cff.user_id = #{userId} and ctr.reply_type = '2'
+                 LEFT JOIN im_user cuu ON cuu.id = ctr.target_id AND cuu.status = 0 and ctr.reply_type = '2'
+        WHERE ctr.topic_id = #{topicId}
+          AND ctr.reply_status = 'Y'
+    </select>
+</mapper>

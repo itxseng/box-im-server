@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bx.implatform.mapper.ChatTopicMapper">
+
+    <!-- 字段集 -->
+    <sql id="baseSql">
+        select ct.id, ct.user_id, ct.topic_type, ct.content,ct.address, ct.location,ct.latitude,ct.longitude, ct.create_time,ct.open_type from chat_topic ct
+    </sql>
+
+    <!-- 查询列表字段 -->
+    <select id="queryList" resultType="com.bx.implatform.entity.ChatTopic">
+        <include refid="baseSql"/>
+        <where>
+            <if test="userId != null">
+                and ct.user_id = #{userId}
+            </if>
+            <if test="topicType != null">
+                and ct.topic_type = #{topicType.code}
+            </if>
+            <if test="openType == null">
+                AND ct.open_type != 2
+                AND EXISTS(SELECT csp.target_id FROM chat_see_permission csp WHERE   csp.user_id = #{userId} AND permission_type=1)
+                AND IF(ct.open_type = 1, 1 = 1
+                ,IF(ct.open_type = 3
+                , EXISTS(SELECT w.id FROM chat_topic_white w WHERE w.topic_id = ct.id AND w.user_id = #{userId})
+                , NOT EXISTS(SELECT b.id FROM chat_topic_black b WHERE b.topic_id = ct.id AND b.user_id = #{userId}))
+                )
+            </if>
+        </where>
+        order by ct.create_time desc
+        limit #{page}, #{pageSize};
+    </select>
+
+    <select id="topicList" resultType="com.bx.implatform.vo.TopicVo04">
+        SELECT   ct.id topic_id, ct.user_id, ct.topic_type, ct.content, ct.location, ct.create_time, ct.latitude, ct.longitude, ct.address, ct.open_type
+        ,IF(tf.remark_nick_name IS NULL OR tf.remark_nick_name = '', tu.nick_name, tf.remark_nick_name) AS display_name
+        ,IF(tf.remark_nick_name IS NULL OR tf.remark_nick_name = '', tu.nick_name, tf.remark_nick_name) as nick_name
+        ,tu.head_image_thumb AS portrait
+        FROM chat_topic ct
+                 LEFT JOIN im_user tu ON ct.user_id = tu.id
+                 LEFT JOIN im_friend tf ON ct.user_id = tf.user_id and tf.friend_id = #{userId} AND tf.deleted = 0
+                 LEFT JOIN chat_topic_white ctw ON ct.id = ctw.topic_id AND ctw.user_id = #{userId}
+                 LEFT JOIN chat_topic_black ctb ON ct.id = ctb.topic_id AND ctb.user_id = #{userId}
+                 LEFT JOIN chat_view_scope cv ON ct.user_id = cv.user_id  AND cv.is_friend = 1
+                 LEFT JOIN chat_see_permission csp ON ct.user_id = csp.target_id AND csp.permission_type = 2 AND csp.user_id = #{userId}
+                 LEFT JOIN chat_see_permission csp1 ON ct.user_id = csp1.user_id AND csp1.permission_type = 1 AND csp1.target_id = #{userId}
+        WHERE ct.user_id = #{userId}
+           OR
+            (((ct.open_type = 1 )
+                OR (ct.open_type = 2 AND ct.user_id = #{userId})
+                OR (ct.open_type = 3 AND ctw.id IS NOT NULL)
+                OR (ct.open_type = 4 AND ctb.id IS NULL))
+                AND (
+                 cv.view_type is null
+                     or cv.view_type = 0
+                     OR (cv.view_type = 1 AND ct.user_id = #{userId})
+                     OR (cv.view_type = 2 AND ct.create_time >= NOW() - INTERVAL 3 DAY)
+                     OR (cv.view_type = 3 AND ct.create_time >= NOW() - INTERVAL 7 DAY)
+                 )
+                AND csp.target_id IS NULL
+                AND csp1.target_id IS NULL
+
+        )
+                AND tf.id IS NOT NULL
+        order by ct.create_time desc
+            limit #{page}, #{pageSize};
+    </select>
+
+</mapper>

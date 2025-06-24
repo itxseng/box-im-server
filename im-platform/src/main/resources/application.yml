@@ -1,0 +1,60 @@
+server:
+  port: 8888
+spring:
+  profiles:
+    active: dev # 环境 dev|test|prod
+  application:
+    name: im-platform
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  servlet:
+    multipart:
+      max-file-size: 2048MB       # 单个文件最大2GB
+      max-request-size: 2048MB    # 整个请求最大2GB
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  global-config:
+    db-config:
+      id-type: AUTO # ID自增
+      logic-not-delete-value: 0
+      logic-delete-value: 1
+  configuration:
+    map-underscore-to-camel-case: true  #开启自动驼峰命名规则
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+notify:
+  enable: false # 是否开启推送功能
+  debug: false # 调试模式,生产环境必须关闭，华为手机在调试模式下，一天可发送500条消息
+  app-name: 盒子IM # app名称，也是默认title
+  package-name: com.boxim # 应用包名，跟unipush后台配置的一致
+  active-days: 30   # 用户最近活跃天数，30天内未登录的用户不推送
+  max-size: -1   # 最大消息数量,未读数量超过此值不再推送，-1表示不限制
+  uni-push:
+    # unipush的应用配置，需自行注册申请
+    app-id: nyK71XQYUy9s7Vlzoutlp1
+    app-key: XtG6NkUSL9xxxxLSE0jYA
+    master-secret: MxApXxxxx57jcPCeC0cXk6
+  manufacturer:
+    xm-channel-id: 130751 # 小米消息类别channelId
+    hw-category: IM # 华为消息类别
+    op-category: IM # oppo消息类别
+    vv-category: IM # vivo消息类别
+
+jwt:
+  accessToken:
+    expireIn: 86400000 #半个小时
+    secret: MIIBIjANBgkq
+  refreshToken:
+    expireIn: 604800 #7天
+    secret: IKDiqVmn0VFU
+
+app:
+  version: 3.5.0
+  change-log:
+    - 1.支持搜素聊天记录
+    - 2.好友状态实时刷新
+    - 3.支持设置群管理员
+    - 4.APP支持自动更新
+    - 5.其他细节优化
