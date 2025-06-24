@@ -12,6 +12,7 @@ public class ProcessorFactory {
             case PRIVATE_MESSAGE->SpringContextHolder.getApplicationContext().getBean(PrivateMessageProcessor.class);
             case GROUP_MESSAGE->SpringContextHolder.getApplicationContext().getBean(GroupMessageProcessor.class);
             case SYSTEM_MESSAGE->SpringContextHolder.getApplicationContext().getBean(SystemMessageProcessor.class);
+            case FORCE_LOGUT -> SpringContextHolder.getApplicationContext().getBean(ForceLogoutProcessor.class);
             case CHAT_MESSAGE ->SpringContextHolder.getApplicationContext().getBean(ChatMessageProcessor.class);
             default -> null;
         };

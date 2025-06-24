@@ -52,5 +52,10 @@ public final class IMRedisKey {
      */
     public static final CharSequence IM_USER_DEVICE_ID = "im:user:device_id" ;
 
+    /**
+     * 强制下线队列
+     */
+    public static final String IM_MESSAGE_FORCE_LOGOUT_QUEUE = "im:message:force_logout";
+
 
 }
