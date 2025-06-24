@@ -107,5 +107,9 @@ public class IMClient {
         imSender.sendChatMessage(message);
     }
 
+    public void forceLogout(Long userId, Integer terminal, String deviceId) {
+        imSender.forceLogout(userId, terminal, deviceId);
+    }
+
 
 }
