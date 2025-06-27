@@ -2,6 +2,10 @@ package com.bx.implatform.enums;
 
 import lombok.AllArgsConstructor;
 
+/**
+ * @author Administrator
+ */
+
 @AllArgsConstructor
 public enum MessageStatus {
 
@@ -26,6 +30,10 @@ public enum MessageStatus {
      * 编辑
      */
     EDITED(4, "已编辑"),
+    /**
+     * 编辑
+     */
+    DELETED(5, "已删除"),
 
     ;
 

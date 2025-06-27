@@ -4,6 +4,7 @@ package com.bx.implatform.controller;
 import cn.hutool.core.util.StrUtil;
 import com.bx.imcommon.contant.IMRedisKey;
 import com.bx.imcommon.mq.RedisMQTemplate;
+import com.bx.imclient.IMClient;
 import com.bx.implatform.entity.UserDevice;
 import com.bx.implatform.result.Result;
 import com.bx.implatform.result.ResultUtils;
@@ -36,6 +37,8 @@ public class UserDeviceController {
     private final UserDeviceService userDeviceService;
 
     private final RedisMQTemplate redisMQTemplate;
+
+    private final IMClient imClient;
     @Operation(summary = "用户登录设备列表", description = "用户登录设备列表")
     @GetMapping("/list")
     public Result<UserDeviceVo> getLoginDevices() {
@@ -80,6 +83,17 @@ public class UserDeviceController {
         return ResultUtils.success(result);
     }
 
-
+    @Operation(summary = "踢设备下线", description = "踢指定设备下线")
+    @GetMapping("/kick")
+    public Result<Void> kickDevice(String deviceId) {
+        UserSession session = SessionContext.getSession();
+        Long userId = session.getUserId();
+        UserDevice device = userDeviceService.findByUserIdAndDeviceId(userId, deviceId);
+        if (device != null) {
+            Integer terminal = Integer.valueOf(device.getPlatform());
+            imClient.forceLogout(userId, terminal, deviceId);
+        }
+        return ResultUtils.success();
+    }
 
 }

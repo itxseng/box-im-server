@@ -68,4 +68,12 @@ public class UserDeviceServiceImpl extends ServiceImpl<UserDeviceMapper, UserDev
                 .orderByDesc(UserDevice::getLastLoginTime);
         return deviceMapper.selectList(queryWrapper);
     }
+
+    @Override
+    public void deleteByUserIdAndDeviceId(Long userId, String deviceId) {
+        LambdaUpdateWrapper<UserDevice> queryWrapper = new LambdaUpdateWrapper<>();
+        queryWrapper.eq(UserDevice::getUserId, userId)
+                .eq(UserDevice::getDeviceId, deviceId);
+        deviceMapper.delete(queryWrapper);
+    }
 }

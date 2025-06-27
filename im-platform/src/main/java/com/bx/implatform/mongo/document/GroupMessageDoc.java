@@ -24,6 +24,7 @@ public class GroupMessageDoc {
     private Boolean receiptOk;
     private Integer status;
     private Date sendTime;
+    private Long operatorId;
 
     public static GroupMessageDoc fromEntity(GroupMessage message) {
         GroupMessageDoc doc = new GroupMessageDoc();
@@ -40,6 +41,7 @@ public class GroupMessageDoc {
         doc.setReceiptOk(message.getReceiptOk());
         doc.setStatus(message.getStatus());
         doc.setSendTime(message.getSendTime());
+        doc.setOperatorId(message.getOperatorId());
         return doc;
     }
 
@@ -58,6 +60,7 @@ public class GroupMessageDoc {
         msg.setReceiptOk(this.receiptOk);
         msg.setStatus(this.status);
         msg.setSendTime(this.sendTime);
+        msg.setOperatorId(this.operatorId);
         return msg;
     }
 }

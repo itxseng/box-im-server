@@ -90,6 +90,11 @@ public class GroupMessage {
      */
     private String clientMsgId;
 
+    /**
+     * 操作人
+     */
+    private Long operatorId;
+
     public GroupMessage() {
         this.id = MessageIdGenerator.nextId();
     }

@@ -2,6 +2,7 @@ package com.bx.implatform.service;
 
 import com.bx.implatform.dto.GroupMessageDTO;
 import com.bx.implatform.dto.GroupUpdateMessageDTO;
+import com.bx.implatform.dto.MessageOperateDTO;
 import com.bx.implatform.entity.GroupMessage;
 import com.bx.implatform.vo.GroupMessageVO;
 
@@ -20,9 +21,9 @@ public interface GroupMessageService{
     /**
      * 删除消息消息
      *
-     * @param id 消息id
+     * @param dto 消息id
      */
-    GroupMessageVO delMessage(Long id);
+    GroupMessageVO delMessage(MessageOperateDTO dto);
 
     /**
      * 撤回消息

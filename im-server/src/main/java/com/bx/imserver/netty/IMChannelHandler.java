@@ -74,20 +74,23 @@ public class IMChannelHandler extends SimpleChannelInboundHandler<IMSendInfo> {
 
             ChannelHandlerContext context = UserChannelCtxMap.getChannelCtx(userId, terminal, deviceId);
             if (context != null && ctx.channel().id().equals(context.channel().id())) {
-                UserChannelCtxMap.removeChannelCtx(userId, terminal, null);
+                UserChannelCtxMap.removeChannelCtx(userId, terminal, deviceId);
 
                 RedisMQTemplate redisTemplate = SpringContextHolder.getBean(RedisMQTemplate.class);
-                String key = String.join(":", IMRedisKey.IM_USER_SERVER_ID, userId.toString(), terminal.toString());
+                String deviceKey = String.join(":", IMRedisKey.IM_USER_DEVICE_ID, userId.toString(), terminal.toString());
 
                 try {
-                    redisTemplate.delete(key);
-                    IMUserEvent event = new IMUserEvent();
-                    event.setEventType(IMEventType.OFFLINE.code());
-                    event.setUserInfo(new IMUserInfo(userId, terminal));
-                    event.setExtra(true);
-                    redisTemplate.opsForList().rightPush(IMRedisKey.IM_USER_EVENT_QUEUE, event);
-                    String deviceKey = String.join(":", IMRedisKey.IM_USER_DEVICE_ID, userId.toString(), terminal.toString());
                     redisTemplate.opsForSet().remove(deviceKey, deviceId);
+                    Long size = redisTemplate.opsForSet().size(deviceKey);
+                    if (size == null || size == 0) {
+                        String key = String.join(":", IMRedisKey.IM_USER_SERVER_ID, userId.toString(), terminal.toString());
+                        redisTemplate.delete(key);
+                        IMUserEvent event = new IMUserEvent();
+                        event.setEventType(IMEventType.OFFLINE.code());
+                        event.setUserInfo(new IMUserInfo(userId, terminal));
+                        event.setExtra(true);
+                        redisTemplate.opsForList().rightPush(IMRedisKey.IM_USER_EVENT_QUEUE, event);
+                    }
                 } catch (Exception e) {
                     log.error("handlerRemoved Redis操作异常，userId={}, terminal={}, deviceId={}", userId, terminal, deviceId, e);
                 }

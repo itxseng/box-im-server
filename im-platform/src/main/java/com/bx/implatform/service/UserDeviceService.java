@@ -18,4 +18,5 @@ public interface UserDeviceService {
 
     List<UserDevice> getLoginDevices();
 
+    void deleteByUserIdAndDeviceId(Long userId, String deviceId);
 }

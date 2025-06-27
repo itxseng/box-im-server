@@ -17,6 +17,7 @@ import com.bx.implatform.annotation.OnlineCheck;
 import com.bx.implatform.contant.Constant;
 import com.bx.implatform.dto.GroupMessageDTO;
 import com.bx.implatform.dto.GroupUpdateMessageDTO;
+import com.bx.implatform.dto.MessageOperateDTO;
 import com.bx.implatform.entity.Group;
 import com.bx.implatform.entity.GroupMember;
 import com.bx.implatform.entity.GroupMessage;
@@ -110,46 +111,42 @@ public class GroupMessageServiceImpl implements GroupMessageService {
     }
 
     @Override
-    public GroupMessageVO delMessage(Long id) {
+    public GroupMessageVO delMessage(MessageOperateDTO dto) {
         UserSession session = SessionContext.getSession();
-        GroupMessage msg = mongoMessageService.findGroupMessageById(id);
-
-        if (Objects.isNull(msg)) {
-            throw new GlobalException("消息不存在");
-        }
-        if (System.currentTimeMillis() - msg.getSendTime().getTime() > IMConstant.ALLOW_RECALL_SECOND * 1000) {
-            throw new GlobalException("消息已发送超过5分钟，无法删除");
-        }
+        List<GroupMessage> msgList = mongoMessageService.findGroupMessagesByIds(dto.getIds());
         // 判断是否在群里
-        GroupMember member = groupMemberService.findByGroupAndUserId(msg.getGroupId(), session.getUserId());
+        GroupMember member = groupMemberService.findByGroupAndUserId(dto.getGroupId(), session.getUserId());
         if (Objects.isNull(member) || Boolean.TRUE.equals(member.getQuit())) {
             throw new GlobalException("您已不在群聊里面，无法删除消息");
         }
-        //管理员和自己可以删除
-        if (!msg.getSendId().equals(session.getUserId()) && !groupService.checkManager(msg.getGroupId(), member)) {
-            throw new GlobalException("这条消息不是由您发送,无法删除");
-        }
-        // 删除数据库消息数据库
-//        this.removeById(id);
+        msgList.forEach(msg -> {
+            //管理员和自己可以删除
+            if (!msg.getSendId().equals(session.getUserId()) && !groupService.checkManager(msg.getGroupId(), member)) {
+                throw new GlobalException("这条消息不是由您发送,无法删除");
+            }
+            // 删除数据库消息数据库
+            mongoMessageService.updateGroupMessageDeleteStatus(msg.getId(), session.getUserId());
+        });
+
+
         // 生成一条删除消息
         GroupMessage recallMsg = new GroupMessage();
         recallMsg.setStatus(MessageStatus.UNSEND.code());
-        recallMsg.setType(MessageType.GROUP_MESSAGE_DEL.code());
-        recallMsg.setGroupId(msg.getGroupId());
+        recallMsg.setType(MessageType.DELETE_MESSAGE.code());
+        recallMsg.setGroupId(dto.getGroupId());
         recallMsg.setSendId(session.getUserId());
         recallMsg.setSendNickName(member.getShowNickName());
-        recallMsg.setContent(id.toString());
+        recallMsg.setContent(dto.getIds().toString());
         recallMsg.setSendTime(new Date());
-//        this.save(recallMsg);
         // 群发
-        List<Long> userIds = groupMemberService.findUserIdsByGroupId(msg.getGroupId());
+        List<Long> userIds = groupMemberService.findUserIdsByGroupId(dto.getGroupId());
         GroupMessageVO msgInfo = BeanUtils.copyProperties(recallMsg, GroupMessageVO.class);
         IMGroupMessage<GroupMessageVO> sendMessage = new IMGroupMessage<>();
         sendMessage.setSender(new IMUserInfo(session.getUserId(), session.getTerminal()));
         sendMessage.setRecvIds(userIds);
         sendMessage.setData(msgInfo);
         imClient.sendGroupMessage(sendMessage);
-        log.info("删除群聊消息，发送id:{},群聊id:{},内容:{}", session.getUserId(), msg.getGroupId(), msg.getContent());
+        log.info("删除群聊消息，发送id:{},群聊id:{},内容:{}", session.getUserId(), dto.getGroupId(), recallMsg.getContent());
         return msgInfo;
     }
 

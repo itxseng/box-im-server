@@ -9,6 +9,7 @@ public class ProcessorFactory {
         return switch (cmd) {
             case LOGIN->SpringContextHolder.getApplicationContext().getBean(LoginProcessor.class);
             case HEART_BEAT -> SpringContextHolder.getApplicationContext().getBean(HeartbeatProcessor.class);
+            case FORCE_LOGUT -> SpringContextHolder.getApplicationContext().getBean(ForceLogoutProcessor.class);
             case PRIVATE_MESSAGE->SpringContextHolder.getApplicationContext().getBean(PrivateMessageProcessor.class);
             case GROUP_MESSAGE->SpringContextHolder.getApplicationContext().getBean(GroupMessageProcessor.class);
             case SYSTEM_MESSAGE->SpringContextHolder.getApplicationContext().getBean(SystemMessageProcessor.class);

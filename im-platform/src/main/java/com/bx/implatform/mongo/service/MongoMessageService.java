@@ -2,6 +2,7 @@ package com.bx.implatform.mongo.service;
 
 import com.bx.implatform.entity.GroupMessage;
 import com.bx.implatform.entity.PrivateMessage;
+import com.bx.implatform.enums.MessageStatus;
 import com.bx.implatform.mongo.document.GroupMessageDoc;
 import com.bx.implatform.mongo.document.PrivateMessageDoc;
 import com.bx.implatform.mongo.repository.GroupMessageRepository;
@@ -35,8 +36,8 @@ public class MongoMessageService {
     // 🔗 依赖注入
     // ------------------------------------------------------------------
     private final PrivateMessageRepository privateRepo;
-    private final GroupMessageRepository   groupRepo;
-    private final MongoTemplate            mongo;
+    private final GroupMessageRepository groupRepo;
+    private final MongoTemplate mongo;
 
     // ==================================================================
     // 📨 私聊消息（PrivateMessage）相关方法
@@ -73,7 +74,7 @@ public class MongoMessageService {
      */
     public void updatePrivateMessagesStatus(Collection<Long> ids, Integer status) {
         if (ids == null || ids.isEmpty()) return;
-        Query  q = Query.query(Criteria.where("id").in(ids));
+        Query q = Query.query(Criteria.where("id").in(ids));
         Update u = Update.update("status", status);
         mongo.updateMulti(q, u, PrivateMessageDoc.class);
     }
@@ -106,7 +107,7 @@ public class MongoMessageService {
      * 清空我——>peer 的会话（只改我发出的消息状态）。
      */
     public void clearConversation(Long selfId, Long peerId, Integer status) {
-        Query  q = Query.query(Criteria.where("sendId").is(selfId).and("recvId").is(peerId));
+        Query q = Query.query(Criteria.where("sendId").is(selfId).and("recvId").is(peerId));
         Update u = Update.update("status", status);
         mongo.updateMulti(q, u, PrivateMessageDoc.class);
     }
@@ -149,8 +150,8 @@ public class MongoMessageService {
      */
     public List<PrivateMessage> findPrivateMessages(Long userId, Long minId, Date minDate) {
         Criteria timeRange = Criteria.where("sendTime").gte(minDate);
-        Criteria idRange   = Criteria.where("id").gt(minId);
-        Criteria userSide  = new Criteria().orOperator(
+        Criteria idRange = Criteria.where("id").gt(minId);
+        Criteria userSide = new Criteria().orOperator(
                 Criteria.where("sendId").is(userId),
                 Criteria.where("recvId").is(userId)
         );
@@ -160,7 +161,7 @@ public class MongoMessageService {
         );
 
 
-        Criteria all = new Criteria().andOperator(idRange, timeRange, userSide,notDeleted);
+        Criteria all = new Criteria().andOperator(idRange, timeRange, userSide, notDeleted);
 
         Query q = Query.query(all)
                 .with(Sort.by(Sort.Direction.ASC, "id"));
@@ -228,7 +229,7 @@ public class MongoMessageService {
      * 把 peer ➜ self 的 <code>sended</code> 状态消息批量改为 <code>readed</code>。
      */
     public void markPrivateMessagesRead(Long peerId, Long selfId, Integer sended, Integer readed) {
-        Query  q = Query.query(Criteria.where("sendId").is(peerId)
+        Query q = Query.query(Criteria.where("sendId").is(peerId)
                 .and("recvId").is(selfId)
                 .and("status").is(sended));
         Update u = Update.update("status", readed);
@@ -252,23 +253,26 @@ public class MongoMessageService {
      */
     public void markMessagesSendedIfUnsend(Collection<Long> messageIds, Integer unsend, Integer sended) {
         if (messageIds == null || messageIds.isEmpty()) return;
-        Query  q = Query.query(Criteria.where("id").in(messageIds).and("status").is(unsend));
+        Query q = Query.query(Criteria.where("id").in(messageIds).and("status").is(unsend));
         Update u = Update.update("status", sended);
         mongo.updateMulti(q, u, PrivateMessageDoc.class);
     }
-
 
 
     // ==================================================================
     // 👥 群聊消息（GroupMessage）相关方法
     // ==================================================================
 
-    /** 保存一条群聊消息。 */
+    /**
+     * 保存一条群聊消息。
+     */
     public void saveGroupMessage(GroupMessage msg) {
         groupRepo.save(GroupMessageDoc.fromEntity(msg));
     }
 
-    /** 根据 ID 更新群聊消息状态。 */
+    /**
+     * 根据 ID 更新群聊消息状态。
+     */
     public void updateGroupMessageStatus(Long id, Integer status) {
         GroupMessageDoc doc = groupRepo.findById(id).orElse(null);
         if (doc != null) {
@@ -277,29 +281,39 @@ public class MongoMessageService {
         }
     }
 
-    /** 根据消息 ID 查询群聊消息。 */
+    /**
+     * 根据消息 ID 查询群聊消息。
+     */
     public GroupMessage findGroupMessageById(Long id) {
         GroupMessageDoc doc = groupRepo.findById(id).orElse(null);
         return doc == null ? null : doc.toEntity();
     }
 
-    /** 查询指定群集合在 minId、minDate 之后的所有消息。 */
+    /**
+     * 查询指定群集合在 minId、minDate 之后的所有消息。
+     */
     public List<GroupMessage> findGroupMessages(Long minId, Date minDate, Collection<Long> groupIds, Integer recall) {
-        Query q = Query.query(Criteria.where("id").gt(minId)
-                        .and("sendTime").gte(minDate)
-                        .and("groupId").in(groupIds)
-                        .and("status").ne(recall))
-                .with(Sort.by(Sort.Direction.ASC, "id"));
+        Criteria c = new Criteria().andOperator(
+                Criteria.where("id").gt(minId),
+                Criteria.where("sendTime").gte(minDate),
+                Criteria.where("groupId").in(groupIds),
+                Criteria.where("status").ne(recall),
+                Criteria.where("status").ne(MessageStatus.DELETED.code())
+        );
+        Query q = Query.query(c).with(Sort.by(Sort.Direction.ASC, "id"));
         return mongo.find(q, GroupMessageDoc.class)
                 .stream().map(GroupMessageDoc::toEntity).collect(Collectors.toList());
     }
 
-    /** 查询用户退群前的群聊消息（时间 + id 双条件）。 */
+    /**
+     * 查询用户退群前的群聊消息（时间 + id 双条件）。
+     */
     public List<GroupMessage> findQuitGroupMessages(Long groupId, Date minDate, Date quitTime, Long minId) {
         Criteria criteria = new Criteria().andOperator(
                 Criteria.where("id").gt(minId),
                 Criteria.where("sendTime").gte(minDate).lte(quitTime),
-                Criteria.where("groupId").is(groupId)
+                Criteria.where("groupId").is(groupId),
+                validGroupMessageCriteria()
         );
 
         Query q = Query.query(criteria)
@@ -309,25 +323,35 @@ public class MongoMessageService {
                 .stream().map(GroupMessageDoc::toEntity).collect(Collectors.toList());
     }
 
-    /** 批量 ID 查询群聊消息。 */
+    /**
+     * 批量 ID 查询群聊消息。
+     */
     public List<GroupMessage> findGroupMessagesByIds(Collection<Long> ids) {
         Query q = Query.query(Criteria.where("id").in(ids));
         return mongo.find(q, GroupMessageDoc.class)
                 .stream().map(GroupMessageDoc::toEntity).collect(Collectors.toList());
     }
 
-    /** 群聊历史记录查询（倒序分页）。 */
+    /**
+     * 群聊历史记录查询（倒序分页）。
+     */
     public List<GroupMessage> findGroupHistory(Long groupId, Date joinTime, long skip, long limit, Integer recall) {
-        Query q = Query.query(Criteria.where("groupId").is(groupId)
-                        .and("sendTime").gt(joinTime)
-                        .and("status").ne(recall))
+        Criteria c = new Criteria().andOperator(
+                Criteria.where("groupId").is(groupId),
+                Criteria.where("sendTime").gt(joinTime),
+                Criteria.where("status").ne(recall),
+                Criteria.where("status").ne(MessageStatus.DELETED.code())
+        );
+        Query q = Query.query(c)
                 .with(Sort.by(Sort.Direction.DESC, "id"))
                 .skip(skip).limit((int) limit);
         return mongo.find(q, GroupMessageDoc.class)
                 .stream().map(GroupMessageDoc::toEntity).collect(Collectors.toList());
     }
 
-    /** 查询群的最后一条消息。 */
+    /**
+     * 查询群的最后一条消息。
+     */
     public GroupMessage findLastGroupMessage(Long groupId) {
         Query q = Query.query(Criteria.where("groupId").is(groupId))
                 .with(Sort.by(Sort.Direction.DESC, "id")).limit(1);
@@ -335,9 +359,11 @@ public class MongoMessageService {
         return doc == null ? null : doc.toEntity();
     }
 
-    /** 查询群聊收据消息（回执）。 */
+    /**
+     * 查询群聊收据消息（回执）。
+     */
     public List<GroupMessage> findReceiptMessages(Long groupId, Long startId, Long endId, Integer recall) {
-        Criteria range  = Criteria.where("id").gt(startId).lte(endId);
+        Criteria range = Criteria.where("id").gt(startId).lte(endId);
         Criteria others = new Criteria().andOperator(
                 Criteria.where("groupId").is(groupId),
                 Criteria.where("status").ne(recall),
@@ -347,10 +373,44 @@ public class MongoMessageService {
                 .stream().map(GroupMessageDoc::toEntity).collect(Collectors.toList());
     }
 
-    /** 更新群聊消息的 receiptOk 标志位。 */
+    /**
+     * 更新群聊消息的 receiptOk 标志位。
+     */
     public void updateGroupMessageReceiptOk(Long id, boolean ok) {
-        Query  q = Query.query(Criteria.where("id").is(id));
+        Query q = Query.query(Criteria.where("id").is(id));
         Update u = Update.update("receiptOk", ok);
         mongo.updateFirst(q, u, GroupMessageDoc.class);
     }
+
+
+    /**
+     * 更新群聊消息的删除状态：
+     *
+     * @param messageId    消息 ID
+     * @param operatorId   当前操作用户 ID
+     */
+    public void updateGroupMessageDeleteStatus(Long messageId, Long operatorId) {
+        Query query = Query.query(Criteria.where("id").is(messageId));
+        Update update = new Update();
+
+        // 管理员删除所有人：设置状态和作用域
+        update.set("status", MessageStatus.DELETED.code());
+        // 普通成员：仅删除自己
+        update.set("operatorId", operatorId);
+
+
+        mongo.updateFirst(query, update, GroupMessageDoc.class);
+    }
+
+
+
+
+    /**
+     * 群聊消息过滤条件：排除 status = 5 的消息
+     */
+    private Criteria validGroupMessageCriteria() {
+        return Criteria.where("status").ne(5);
+    }
+
+
 }

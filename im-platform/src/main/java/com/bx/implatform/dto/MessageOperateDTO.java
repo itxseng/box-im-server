@@ -12,6 +12,7 @@ public class MessageOperateDTO {
 
     /** 对端用户 ID；清空必传，删除操作可不传 */
     private Long peerId;
+    private Long groupId;
 
     /** 待删除的消息 ID 列表；DELETE 必传，CLEAR 可为空 */
     private List<Long> ids;

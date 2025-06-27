@@ -3,6 +3,7 @@ package com.bx.implatform.controller;
 import com.bx.implatform.annotation.RepeatSubmit;
 import com.bx.implatform.dto.GroupMessageDTO;
 import com.bx.implatform.dto.GroupUpdateMessageDTO;
+import com.bx.implatform.dto.MessageOperateDTO;
 import com.bx.implatform.result.Result;
 import com.bx.implatform.result.ResultUtils;
 import com.bx.implatform.service.GroupMessageService;
@@ -50,10 +51,10 @@ public class GroupMessageController {
     }
 
 
-    @DeleteMapping("/del/{id}")
+    @DeleteMapping("/delMessage")
     @Operation(summary = "删除消息", description = "删除群聊消息")
-    public Result<GroupMessageVO> delMessage(@NotNull(message = "消息id不能为空") @PathVariable Long id) {
-        return ResultUtils.success(groupMessageService.delMessage(id));
+    public Result<GroupMessageVO> delMessage(@RequestBody @Valid MessageOperateDTO dto) {
+        return ResultUtils.success(groupMessageService.delMessage(dto));
     }
 
     @GetMapping("/pullOfflineMessage")
